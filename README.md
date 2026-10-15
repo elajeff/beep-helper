@@ -1,1 +1,3 @@
 A beeping notifier I made for a game where I had to click something every few seconds but the timing was never quite right so instead of a fixed interval I let the user decide the integer fully and then the volume was too loud and annoying so I had to customize that fully too with a volume bar and then I didn't like how the UI looked so I tried to make that look slick too and by that point I was too lazy so I ended up vibecoding the tone profile until it gave 3 half-decent options (it also changed a few other things for no reason but whatever)
+
+To run just go into the dist folder & run the .exe
