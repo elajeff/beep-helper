@@ -1,3 +1,59 @@
-A beeping notifier I made for a game where I had to click something every few seconds but the timing was never quite right so instead of a fixed interval I let the user decide the integer fully and then the volume was too loud and annoying so I had to customize that fully too with a volume bar and then I didn't like how the UI looked so I tried to make that look slick too and by that point I was too lazy so I ended up vibecoding the tone profile until it gave 3 half-decent options (it also changed a few other things for no reason but whatever)
+# Beep Helper
 
-To run just go into the dist folder & run the .exe
+Beep Helper is a small Windows desktop utility that plays a synthesized tone at a configurable interval. It provides a repeating audible reminder at regular intervals.
+
+## Features
+
+- Set the interval in seconds, including fractional values.
+- Adjust the generated tone volume from 1% to 100%.
+- Choose from three tone profiles:
+  - Soft Bell: a quieter, decaying 659 Hz tone with a subtle octave harmonic.
+  - Rising Chime: two overlapping tones ascending from 440 Hz to about 554 Hz.
+  - Double Ping: two short 784 Hz tones separated by a brief pause.
+- Start and stop the notifier from the desktop interface.
+- Changing the interval while running stops the notifier. Start it again to use the new interval.
+
+## Requirements
+
+- Windows.
+- Python 3 with Tkinter available.
+
+The application uses Python's standard library and the Windows `winsound` module. No third-party package is required to run it from source.
+
+## Run from source
+
+Open PowerShell in the repository directory and run:
+
+```powershell
+py beep_helper.py
+```
+
+## Build the Windows executable
+
+Install PyInstaller:
+
+```powershell
+py -m pip install pyinstaller
+```
+
+Build using the included specification:
+
+```powershell
+py -m PyInstaller --clean --noconfirm beep_helper.spec
+```
+
+The executable is created at:
+
+```text
+dist\beep_helper.exe
+```
+
+## Implementation
+
+The application generates a short WAV audio file with a smooth volume envelope and plays it through Windows audio playback. The volume control adjusts the generated tone's amplitude; it does not change Windows master volume or individual application volumes.
+
+## Limitations
+
+- This is a local Windows utility, not a background service.
+- It does not save user preferences between launches.
+- Notifications depend on the application running and Windows audio being available.

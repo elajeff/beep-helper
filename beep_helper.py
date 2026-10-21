@@ -10,6 +10,11 @@ from tkinter import ttk, messagebox
 import wave
 import winsound
 
+def _resource_path(relative_path):
+    """Locate an asset in source runs and PyInstaller bundles."""
+    base_path = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
+
 # Palette Design Tokens
 BG_COLOR = "#121212"
 CARD_BG = "#1E1E1E"
@@ -30,6 +35,7 @@ class RefinedBeeperApp:
         self.root.geometry("380x520")
         self.root.resizable(False, False)
         self.root.configure(bg=BG_COLOR)
+        self.root.iconbitmap(_resource_path(os.path.join("assets", "beep_helper.ico")))
 
         self.is_running = False
         self.loop_thread = None
@@ -93,7 +99,7 @@ class RefinedBeeperApp:
 
         subtitle = tk.Label(
             container,
-            text="Precision acoustic interval notifier",
+            text="Play a sound at regular intervals",
             font=("Segoe UI", 9),
             fg=TEXT_SECONDARY,
             bg=BG_COLOR,
@@ -180,19 +186,19 @@ class RefinedBeeperApp:
         self.tone_var = tk.IntVar(value=1)
         r1 = ttk.Radiobutton(
             card,
-            text="Gentle Pure Tone (350 Hz Chime)",
+            text="Soft Bell (659 Hz)",
             value=1,
             variable=self.tone_var,
         )
         r2 = ttk.Radiobutton(
             card,
-            text="Warm A4 Chime (440 Hz)",
+            text="Rising Chime (440 to 554 Hz)",
             value=2,
             variable=self.tone_var,
         )
         r3 = ttk.Radiobutton(
             card,
-            text="Soft Harmonic Dyad (350 + 525 Hz)",
+            text="Double Ping (784 Hz)",
             value=3,
             variable=self.tone_var,
         )
@@ -237,34 +243,54 @@ class RefinedBeeperApp:
                 text="Status: Stopped (Interval changed)", fg=ACCENT_RED
             )
 
-    def create_wav_file(self, profile_id=1, duration_ms=350, volume_pct=35):
-        """Generates smoothed harmonic sine tones without transient clicks."""
+    def create_wav_file(self, profile_id=1, volume_pct=35):
+        """Generate short, click-free synthesized tones for the selected profile."""
         sample_rate = 44100
-        num_samples = int(sample_rate * (duration_ms / 1000.0))
-        amplitude = (volume_pct / 100.0) ** 1.8 * 32767.0
+
+        if profile_id == 1:
+            # Soft Bell: quieter 659 Hz note with a subtle octave harmonic.
+            events = [(0.0, 0.32, 659.25, 0.92, 0.18)]
+            profile_gain = 0.36
+        elif profile_id == 2:
+            # Rising Chime: two overlapping notes, from A4 up to C#5.
+            events = [
+                (0.0, 0.25, 440.0, 0.56, 0.14),
+                (0.11, 0.30, 554.37, 0.50, 0.10),
+            ]
+            profile_gain = 0.62
+        else:
+            # Double Ping: two short 784 Hz notes separated by a pause.
+            events = [
+                (0.0, 0.12, 783.99, 0.95, 0.06),
+                (0.20, 0.15, 783.99, 0.78, 0.06),
+            ]
+            profile_gain = 0.56
+
+        total_duration = max(start + duration for start, duration, *_ in events)
+        num_samples = int(sample_rate * total_duration)
+        volume = max(1, min(100, int(volume_pct)))
+        amplitude = (volume / 100.0) ** 1.8 * 32767.0 * 0.82 * profile_gain
         raw_pcm = array.array("h")
 
         for i in range(num_samples):
-            t = float(i) / sample_rate
+            t = i / sample_rate
+            mixed = 0.0
 
-            if profile_id == 1:
-                # 350 Hz Soft Pure Tone
-                sine_val = math.sin(2.0 * math.pi * 350.0 * t)
-            elif profile_id == 2:
-                # Warm A4 Tone (440 Hz with faint 2nd harmonic for richness)
-                sine_val = 0.85 * math.sin(
-                    2.0 * math.pi * 440.0 * t
-                ) + 0.15 * math.sin(2.0 * math.pi * 880.0 * t)
-            else:
-                # Soft Harmonic Dyad (350 Hz + 525 Hz Perfect Fifth)
-                sine_val = 0.6 * math.sin(
-                    2.0 * math.pi * 350.0 * t
-                ) + 0.4 * math.sin(2.0 * math.pi * 525.0 * t)
+            for start, duration, frequency, level, harmonic in events:
+                elapsed = t - start
+                if not 0.0 <= elapsed < duration:
+                    continue
 
-            # Smooth Exponential Bell Decay Envelope
-            envelope = math.sin(math.pi * (i / num_samples)) ** 1.5
+                attack = min(1.0, elapsed / 0.008)
+                release = min(1.0, (duration - elapsed) / 0.025)
+                decay = math.exp(-4.2 * elapsed / duration)
+                envelope = attack * release * decay
 
-            sample = int(sine_val * amplitude * envelope)
+                phase = 2.0 * math.pi * frequency * elapsed
+                tone = math.sin(phase) + harmonic * math.sin(2.0 * phase)
+                mixed += level * envelope * tone
+
+            sample = int(max(-32768, min(32767, mixed * amplitude)))
             raw_pcm.append(sample)
 
         with wave.open(self.temp_wav_path, "wb") as wf:
@@ -276,9 +302,7 @@ class RefinedBeeperApp:
     def play_sound(self):
         profile_id = self.tone_var.get()
         vol = self.vol_var.get()
-        self.create_wav_file(
-            profile_id=profile_id, duration_ms=350, volume_pct=vol
-        )
+        self.create_wav_file(profile_id=profile_id, volume_pct=vol)
         winsound.PlaySound(
             self.temp_wav_path, winsound.SND_FILENAME | winsound.SND_ASYNC
         )
