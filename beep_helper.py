@@ -3,8 +3,6 @@ import math
 import os
 import sys
 import tempfile
-import threading
-import time
 import tkinter as tk
 from tkinter import ttk, messagebox
 import wave
@@ -15,7 +13,7 @@ def _resource_path(relative_path):
     base_path = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_path, relative_path)
 
-# Palette Design Tokens
+# Interface colors
 BG_COLOR = "#121212"
 CARD_BG = "#1E1E1E"
 TEXT_PRIMARY = "#FFFFFF"
@@ -27,7 +25,7 @@ ACCENT_RED_HOVER = "#DC2626"
 BORDER_COLOR = "#2D2D2D"
 
 
-class RefinedBeeperApp:
+class BeepHelperApp:
 
     def __init__(self, root):
         self.root = root
@@ -38,10 +36,10 @@ class RefinedBeeperApp:
         self.root.iconbitmap(_resource_path(os.path.join("assets", "beep_helper.ico")))
 
         self.is_running = False
-        self.loop_thread = None
-        self.temp_wav_path = os.path.join(
-            tempfile.gettempdir(), "beep_helper_sound.wav"
-        )
+        self.timer_id = None
+        self.sound_settings = None
+        self.temp_directory = tempfile.TemporaryDirectory(prefix="beep-helper-")
+        self.temp_wav_path = os.path.join(self.temp_directory.name, "sound.wav")
 
         self.setup_styles()
         self.build_ui()
@@ -302,23 +300,36 @@ class RefinedBeeperApp:
     def play_sound(self):
         profile_id = self.tone_var.get()
         vol = self.vol_var.get()
-        self.create_wav_file(profile_id=profile_id, volume_pct=vol)
+        if self.sound_settings != (profile_id, vol):
+            winsound.PlaySound(None, 0)
+            self.create_wav_file(profile_id=profile_id, volume_pct=vol)
+            self.sound_settings = (profile_id, vol)
         winsound.PlaySound(
             self.temp_wav_path, winsound.SND_FILENAME | winsound.SND_ASYNC
         )
 
-    def beeper_loop(self, interval_seconds):
-        while self.is_running:
+    def schedule_beep(self, interval_seconds):
+        self.timer_id = None
+        if not self.is_running:
+            return
+        try:
             self.play_sound()
-            # Step in 100ms slices for instantaneous stop responsiveness
-            steps = int(interval_seconds * 10)
-            for _ in range(steps):
-                if not self.is_running:
-                    break
-                time.sleep(0.1)
+        except (OSError, RuntimeError, tk.TclError) as exc:
+            self.stop_beeper()
+            self.status_label.config(text="Status: Playback failed", fg=ACCENT_RED)
+            messagebox.showerror("Playback failed", str(exc))
+            return
+        self.timer_id = self.root.after(
+            max(1, round(interval_seconds * 1000)),
+            lambda: self.schedule_beep(interval_seconds),
+        )
 
     def stop_beeper(self):
         self.is_running = False
+        if self.timer_id is not None:
+            self.root.after_cancel(self.timer_id)
+            self.timer_id = None
+        winsound.PlaySound(None, 0)
         self.action_btn.config(
             text="START NOTIFIER",
             bg=ACCENT_GREEN,
@@ -330,12 +341,12 @@ class RefinedBeeperApp:
             # Validate Interval Input
             try:
                 interval = float(self.interval_var.get())
-                if interval <= 0:
+                if not math.isfinite(interval) or not 0.01 <= interval <= 86400:
                     raise ValueError
             except ValueError:
                 messagebox.showerror(
                     "Invalid Interval",
-                    "Please enter a valid positive number for the interval.",
+                    "Enter an interval from 0.01 to 86400 seconds.",
                 )
                 return
 
@@ -349,25 +360,21 @@ class RefinedBeeperApp:
                 text=f"Status: Active ({interval}s interval)", fg=ACCENT_GREEN
             )
 
-            self.loop_thread = threading.Thread(
-                target=self.beeper_loop, args=(interval,), daemon=True
-            )
-            self.loop_thread.start()
+            self.schedule_beep(interval)
         else:
             self.stop_beeper()
             self.status_label.config(text="Status: Idle", fg=TEXT_SECONDARY)
 
     def on_close(self):
-        self.is_running = False
+        self.stop_beeper()
         try:
-            if os.path.exists(self.temp_wav_path):
-                os.remove(self.temp_wav_path)
-        except Exception:
+            self.temp_directory.cleanup()
+        except OSError:
             pass
         self.root.destroy()
 
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = RefinedBeeperApp(root)
+    app = BeepHelperApp(root)
     root.mainloop()
