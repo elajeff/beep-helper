@@ -1,10 +1,10 @@
 # Beep Helper
 
-Beep Helper is a small Windows desktop utility that plays a synthesized tone at a configurable interval. It provides a repeating audible reminder at regular intervals.
+Beep Helper is a small Windows desktop utility that plays a synthesized tone at a configurable interval.
 
 ## Features
 
-- Set the interval in seconds, including fractional values.
+- Set the interval from 0.01 to 86400 seconds, including fractional values.
 - Adjust the generated tone volume from 1% to 100%.
 - Choose from three tone profiles:
   - Soft Bell: a quieter, decaying 659 Hz tone with a subtle octave harmonic.
