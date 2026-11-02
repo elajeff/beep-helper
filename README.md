@@ -1,8 +1,12 @@
 # Beep Helper
 
-Beep Helper is a small Windows desktop utility that plays a synthesized tone at a configurable interval.
+A small Windows app that plays a tone at a set interval, from every 10 milliseconds to once a day.
 
-## Features
+Written in Python with Tkinter and nothing outside the standard library. The tones aren't sound files: each one is generated in code as a short WAV with a smooth fade in and out, so they don't click.
+
+![The Beep Helper window with the interval, volume and tone settings](docs/images/main-window.png)
+
+## What it does
 
 - Set the interval from 0.01 to 86400 seconds, including fractional values.
 - Adjust the generated tone volume from 1% to 100%.
@@ -48,7 +52,7 @@ The executable is created at:
 dist\beep_helper.exe
 ```
 
-## Implementation
+## How it works
 
 The application generates a short WAV audio file with a smooth volume envelope and plays it through Windows audio playback. The volume control adjusts the generated tone's amplitude; it does not change Windows master volume or individual application volumes.
 
