@@ -61,3 +61,7 @@ The application generates a short WAV audio file with a smooth volume envelope a
 - This is a local Windows utility, not a background service.
 - It does not save user preferences between launches.
 - Notifications depend on the application running and Windows audio being available.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
