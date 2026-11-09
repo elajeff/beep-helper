@@ -13,7 +13,6 @@ def _resource_path(relative_path):
     base_path = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_path, relative_path)
 
-# Interface colors
 BG_COLOR = "#121212"
 CARD_BG = "#1E1E1E"
 TEXT_PRIMARY = "#FFFFFF"
@@ -44,29 +43,14 @@ class BeepHelperApp:
         self.setup_styles()
         self.build_ui()
 
-        # Handle app closure cleanly
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def setup_styles(self):
         style = ttk.Style()
         style.theme_use("clam")
 
-        # Custom Dark Palette for TTK widgets
         style.configure(".", background=BG_COLOR, foreground=TEXT_PRIMARY)
         style.configure("TLabel", background=CARD_BG, foreground=TEXT_PRIMARY)
-        style.configure(
-            "TLabelframe",
-            background=CARD_BG,
-            bordercolor=BORDER_COLOR,
-            relief="solid",
-            borderwidth=1,
-        )
-        style.configure(
-            "TLabelframe.Label",
-            background=CARD_BG,
-            foreground=TEXT_SECONDARY,
-            font=("Segoe UI", 9, "bold"),
-        )
         style.configure(
             "TRadiobutton",
             background=CARD_BG,
@@ -81,11 +65,9 @@ class BeepHelperApp:
         )
 
     def build_ui(self):
-        # Main Container
         container = tk.Frame(self.root, bg=BG_COLOR, padx=20, pady=20)
         container.pack(fill="both", expand=True)
 
-        # Header Title
         title = tk.Label(
             container,
             text="BEEP HELPER",
@@ -104,7 +86,6 @@ class BeepHelperApp:
         )
         subtitle.pack(anchor="w", pady=(0, 20))
 
-        # Card Container
         card = tk.Frame(
             container,
             bg=CARD_BG,
@@ -115,7 +96,6 @@ class BeepHelperApp:
         )
         card.pack(fill="x", pady=(0, 20))
 
-        # 1. Interval Setting
         interval_label = ttk.Label(
             card, text="INTERVAL (SECONDS)", font=("Segoe UI", 8, "bold")
         )
@@ -149,7 +129,6 @@ class BeepHelperApp:
         )
         unit_label.pack(side="left", padx=(10, 0))
 
-        # 2. Volume Setting
         vol_label = ttk.Label(
             card, text="VOLUME", font=("Segoe UI", 8, "bold")
         )
@@ -175,7 +154,6 @@ class BeepHelperApp:
         )
         self.vol_display.pack(anchor="e", pady=(2, 16))
 
-        # 3. Tone Profiles
         tone_label = ttk.Label(
             card, text="TONE PROFILE", font=("Segoe UI", 8, "bold")
         )
@@ -204,7 +182,6 @@ class BeepHelperApp:
         r2.pack(anchor="w", pady=3)
         r3.pack(anchor="w", pady=3)
 
-        # Start / Stop Action Button
         self.action_btn = tk.Button(
             container,
             text="START NOTIFIER",
@@ -220,7 +197,6 @@ class BeepHelperApp:
         )
         self.action_btn.pack(fill="x")
 
-        # Status Footer
         self.status_label = tk.Label(
             container,
             text="Status: Idle",
@@ -338,7 +314,6 @@ class BeepHelperApp:
 
     def toggle_beeper(self):
         if not self.is_running:
-            # Validate Interval Input
             try:
                 interval = float(self.interval_var.get())
                 if not math.isfinite(interval) or not 0.01 <= interval <= 86400:
