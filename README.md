@@ -32,6 +32,12 @@ Open PowerShell in the repository directory and run:
 py beep_helper.py
 ```
 
+## Run the tests
+
+```powershell
+py -m unittest
+```
+
 ## Build the Windows executable
 
 Install PyInstaller:
